@@ -1,5 +1,10 @@
+using System.Globalization;
+
 var builder = WebApplication.CreateBuilder(args);
 
+var defaultCulture = new CultureInfo("pl-PL");
+CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 

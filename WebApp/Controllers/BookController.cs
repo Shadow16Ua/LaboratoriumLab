@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using WebApp.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApp.Controllers; 
@@ -51,5 +52,10 @@ public class BookController : Controller
     public IActionResult Health()
     {
         return Json(new { status = "ok", time = DateTime.Now });
+    }
+    
+    public IActionResult Index()
+    {
+        return View(BookStoreMemory.Books);
     }
 }
