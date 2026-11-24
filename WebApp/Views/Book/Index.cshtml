@@ -1,23 +1,97 @@
-﻿@model List<Book>
-@{ ViewData["Title"] ??= "Książki"; }
+﻿@model PagedResult<Book>
+@{
+    ViewData["Title"] ??= "Książki";
+    string currentSort = ViewBag.Sort ?? "title";
+    string currentDir = ViewBag.Dir ?? "asc";
+    string? search = ViewBag.Search;
+    int pageSize = ViewBag.PageSize ?? Model.PageSize;
+
+    string NextDir(string col) => currentSort == col && currentDir == "asc" ? "desc" : "asc";
+    string SortArrow(string col) => currentSort == col ? (currentDir == "asc" ? " ▲" : " ▼") : "";
+}
+
 <h2>@ViewData["Title"]</h2>
-<a asp-action="Create" class="btn btn-primary mb-3">+ Dodaj książkę</a>
-<table class="table">
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <a asp-action="Create" class="btn btn-primary">+ Dodaj książkę</a>
+
+    <form asp-action="Index" method="get" class="d-flex gap-2">
+        <input type="text" name="search" value="@search" class="form-control" placeholder="Szukaj po tytule lub ISBN..." />
+        <input type="hidden" name="sort" value="@currentSort" />
+        <input type="hidden" name="dir" value="@currentDir" />
+        <input type="hidden" name="pageSize" value="@pageSize" />
+        <button type="submit" class="btn btn-outline-primary">Szukaj</button>
+        @if (!string.IsNullOrWhiteSpace(search))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Wyczyść</a>
+        }
+    </form>
+</div>
+
+<p class="text-muted small">
+    Łącznie książek: <strong>@Model.TotalCount</strong>
+    @if (Model.TotalPages > 0)
+    {
+        <span>(strona @Model.Page z @Model.TotalPages)</span>
+    }
+</p>
+
+<table class="table table-hover align-middle">
     <thead>
-    <tr>
-        <th>Tytuł</th>
-        <th>Autor</th>
-        <th>Rok</th>
-        <th>Cena</th>
-    </tr>
+        <tr>
+            <th>
+                <a asp-action="Index" asp-route-search="@search" asp-route-sort="title" asp-route-dir="@NextDir("title")" asp-route-pageSize="@pageSize">
+                    Tytuł@(SortArrow("title"))
+                </a>
+            </th>
+            <th>Autor</th>
+            <th>
+                <a asp-action="Index" asp-route-search="@search" asp-route-sort="date" asp-route-dir="@NextDir("date")" asp-route-pageSize="@pageSize">
+                    Rok@(SortArrow("date"))
+                </a>
+            </th>
+            <th>
+                <a asp-action="Index" asp-route-search="@search" asp-route-sort="price" asp-route-dir="@NextDir("price")" asp-route-pageSize="@pageSize">
+                    Cena@(SortArrow("price"))
+                </a>
+            </th>
+            <th class="text-end">Akcje</th>
+        </tr>
     </thead>
     <tbody>
-    @foreach (var b in Model)
-    {
-        <partial name="_BookRow" model="b" />
-    }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center text-muted">Brak książek do wyświetlenia.</td></tr>
+        }
+        else
+        {
+            @foreach (var b in Model.Items)
+            {
+                <partial name="_BookRow" model="b" />
+            }
+        }
     </tbody>
 </table>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Stronicowanie">
+        <ul class="pagination">
+            @for (var p = 1; p <= Model.TotalPages; p++)
+            {
+                <li class="page-item @(p == Model.Page ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@p"
+                       asp-route-pageSize="@pageSize"
+                       asp-route-search="@search"
+                       asp-route-sort="@currentSort"
+                       asp-route-dir="@currentDir">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
 
 @section Scripts {
     <script>

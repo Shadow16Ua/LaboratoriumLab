@@ -3,3 +3,8 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+# SQLite database files (recreated automatically via EF Core migrations)
+*.db
+*.db-shm
+*.db-wal
