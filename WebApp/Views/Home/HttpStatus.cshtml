@@ -1,0 +1,22 @@
+@model ErrorViewModel
+@{
+    var code = Model.Code ?? 500;
+    ViewData["Title"] = $"Błąd {code}";
+    var description = code switch
+    {
+        404 => "Nie znaleziono strony lub zasobu.",
+        403 => "Brak uprawnień do tego zasobu.",
+        401 => "Wymagane logowanie.",
+        _ => "Serwer zwrócił kod błędu."
+    };
+}
+
+<h1 class="text-danger">Błąd @code</h1>
+<p class="lead">@description</p>
+
+@if (Model.ShowRequestId)
+{
+    <p class="text-muted">Identyfikator żądania: <code>@Model.RequestId</code></p>
+}
+
+<a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-primary">Strona główna</a>

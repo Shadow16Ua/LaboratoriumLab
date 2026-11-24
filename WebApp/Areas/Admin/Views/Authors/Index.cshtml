@@ -1,0 +1,25 @@
+@model List<Author>
+@{
+    ViewData["Title"] = "Autorzy";
+}
+
+<h2>Autorzy</h2>
+<a asp-area="Admin" asp-controller="Authors" asp-action="Create" class="btn btn-primary mb-3">+ Dodaj autora</a>
+
+<table class="table table-striped bg-white">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Imię i nazwisko</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var author in Model)
+        {
+            <tr>
+                <td>@author.Id</td>
+                <td>@author.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>

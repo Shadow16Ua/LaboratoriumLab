@@ -1,0 +1,27 @@
+@model List<WebApp.Controllers.RouteInfo>
+@{
+    ViewData["Title"] = "Mapa tras aplikacji";
+}
+
+<h2>Mapa tras aplikacji</h2>
+<p class="text-muted">Wygenerowano z <code>IActionDescriptorCollectionProvider</code> (oraz tras konwencjonalnych z <code>Program.cs</code>).</p>
+
+<table class="table table-striped table-sm">
+    <thead>
+        <tr>
+            <th>Adres</th>
+            <th>Kontroler.Akcja</th>
+            <th>Metoda HTTP</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td><code>@r.Address</code></td>
+                <td><code>@r.ControllerAction</code></td>
+                <td>@r.HttpMethods</td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,5 +1,6 @@
 ﻿@model List<Book>
-<h2>Książki</h2>
+@{ ViewData["Title"] ??= "Książki"; }
+<h2>@ViewData["Title"]</h2>
 <a asp-action="Create" class="btn btn-primary mb-3">+ Dodaj książkę</a>
 <table class="table">
     <thead>

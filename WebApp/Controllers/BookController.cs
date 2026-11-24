@@ -1,26 +1,23 @@
 ﻿using System.Text;
-using WebApp.Models;
 using Microsoft.AspNetCore.Mvc;
+using WebApp.Filters;
+using WebApp.Models;
 
-namespace WebApp.Controllers; 
+namespace WebApp.Controllers;
 
-public class BookDto
-{
-    public string Title { get; set; }
-    public string Isbn { get; set; }
-    public decimal Price { get; set; }
-}
-
+[ServiceFilter(typeof(LogActionFilter))]
+[MeasureTime(Order = 2)]
 public class BookController : Controller
 {
     public IActionResult Hello() => Content("Witaj w BookStore!", "text/plain; charset=utf-8");
 
     public IActionResult Status(int code = 200) => StatusCode(code);
 
+    [HttpGet("Book/Details/{id:int}")]
     public IActionResult Details(int id)
     {
-        ViewBag.Id = id;
-        return View();
+        var book = BookStoreMemory.Books.FirstOrDefault(b => b.Id == id);
+        return book is null ? NotFound() : View(book);
     }
 
     public IActionResult Echo([FromQuery] string name = "nieznajomy", [FromQuery] int count = 1) =>
@@ -30,13 +27,16 @@ public class BookController : Controller
 
     [HttpPost]
     public IActionResult Import([FromBody] BookDto dto) =>
-        Json(new { received = dto.Title, dto.Isbn, dto.Price });
+        Json(new { received = dto.Title, dto.Isbn, dto.Price, note = "Tylko demonstracja – nic nie zapisano." });
 
     public IActionResult Inspect()
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Method: {Request.Method}");
         sb.AppendLine($"Path:   {Request.Path}{Request.QueryString}");
+        sb.AppendLine($"Scheme: {Request.Scheme}, Host: {Request.Host}");
+        sb.AppendLine($"IP:     {HttpContext.Connection.RemoteIpAddress}");
+        sb.AppendLine("--- Nagłówki ---");
         foreach (var h in Request.Headers) sb.AppendLine($"{h.Key}: {h.Value}");
         return Content(sb.ToString(), "text/plain; charset=utf-8");
     }
@@ -53,19 +53,50 @@ public class BookController : Controller
     {
         return Json(new { status = "ok", time = DateTime.Now });
     }
-    
+
     public IActionResult Index()
     {
         return View(BookStoreMemory.Books);
     }
-    
+
+    public Task<IActionResult> ByYear(int year)
+    {
+        var books = BookStoreMemory.Books
+            .Where(b => b.PublicationDate?.Year == year)
+            .ToList();
+        ViewData["Title"] = $"Książki z roku {year}";
+        return Task.FromResult<IActionResult>(View("Index", books));
+    }
+
+    public Task<IActionResult> ByIsbn(string isbn)
+    {
+        var normalized = isbn.Replace("-", "").Replace(" ", "");
+        var book = BookStoreMemory.Books.FirstOrDefault(b =>
+            b.Isbn.Replace("-", "").Replace(" ", "").Equals(normalized, StringComparison.OrdinalIgnoreCase));
+        IActionResult result = book is null
+            ? NotFound()
+            : RedirectToAction(nameof(Details), new { id = book.Id });
+        return Task.FromResult(result);
+    }
+
+    public IActionResult Archive(int year, int month)
+    {
+        var books = BookStoreMemory.Books
+            .Where(b => b.PublicationDate?.Year == year)
+            .ToList();
+        ViewData["Title"] = $"Archiwum: {year}/{month:D2}";
+        return View("Index", books);
+    }
+
+    public IActionResult Boom() => throw new InvalidOperationException("Celowy wyjątek");
+
     [HttpGet]
     public IActionResult Create() => View(new BookFormViewModel());
 
     [HttpPost]
     public IActionResult Create(BookFormViewModel vm)
     {
-        if (!ModelState.IsValid) 
+        if (!ModelState.IsValid)
             return View(vm);
 
         BookStoreMemory.Books.Add(new Book

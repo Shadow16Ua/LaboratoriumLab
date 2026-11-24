@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace WebApp.Models;
 
+/// <summary>Własny atrybut walidacji – data nie może być z przyszłości.</summary>
 public class NotInFutureAttribute : ValidationAttribute
 {
     public NotInFutureAttribute() => ErrorMessage = "Data nie może być z przyszłości";
@@ -11,41 +12,35 @@ public class NotInFutureAttribute : ValidationAttribute
         value is not DateTime d || d.Date <= DateTime.Today;
 }
 
+/// <summary>
+/// Własny atrybut – format ISBN (10 lub 13 cyfr, myślniki i spacje dozwolone).
+/// Sprawdzanie sumy kontrolnej jest opcjonalne: [Isbn(RequireChecksum = true)].
+/// </summary>
 public class IsbnAttribute : ValidationAttribute
 {
-    public bool RequireChecksum { get; set; } = true;
+    public bool RequireChecksum { get; set; }
 
-    public IsbnAttribute() => ErrorMessage = "Niepoprawny format lub suma kontrolna ISBN";
+    public IsbnAttribute() => ErrorMessage = "Niepoprawny numer ISBN";
 
     public override bool IsValid(object? value)
     {
-        if (value is not string raw || string.IsNullOrWhiteSpace(raw))
-            return true;
+        if (value is not string s || string.IsNullOrWhiteSpace(s)) return true; // [Required] zadba o brak
+        var d = Regex.Replace(s, "[- ]", "");
+        if (!Regex.IsMatch(d, @"^(\d{10,13}|\d{9}[Xx])$")) return false;
+        if (!RequireChecksum) return true;
 
-        var clean = raw.Replace("-", "").Replace(" ", "");
-
-        // ISBN-10 (10 znaków)
-        if (clean.Length == 10)
+        if (d.Length == 13)
         {
-            return clean.All(char.IsDigit) || (clean[..9].All(char.IsDigit) && (clean[9] == 'X' || clean[9] == 'x'));
-        }
-
-        // ISBN-13 (13 cyfr ze sprawdzeniem sumy kontrolnej)
-        if (clean.Length == 13 && clean.All(char.IsDigit))
-        {
-            if (!RequireChecksum) return true;
-
             int sum = 0;
-            for (int i = 0; i < 12; i++)
-            {
-                int digit = clean[i] - '0';
-                sum += (i % 2 == 0) ? digit : digit * 3;
-            }
-
-            int checkDigit = (10 - (sum % 10)) % 10;
-            return checkDigit == (clean[12] - '0');
+            for (int i = 0; i < 13; i++) sum += (d[i] - '0') * (i % 2 == 0 ? 1 : 3);
+            return sum % 10 == 0;
         }
-
-        return false;
+        if (d.Length == 10)
+        {
+            int sum = 0;
+            for (int i = 0; i < 10; i++) sum += (d[i] is 'X' or 'x' ? 10 : d[i] - '0') * (10 - i);
+            return sum % 11 == 0;
+        }
+        return false; // 11–12 cyfr nie jest poprawnym ISBN
     }
 }
